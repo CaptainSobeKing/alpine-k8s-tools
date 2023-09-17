@@ -4,10 +4,10 @@ ARG ARCH
 
 # Ignore to update versions here
 # docker build --no-cache --build-arg KUBECTL_VERSION=${tag} --build-arg HELM_VERSION=${helm} --build-arg KUSTOMIZE_VERSION=${kustomize_version} -t ${image}:${tag} .
-ARG HELM_VERSION=3.12.3
-ARG KUBECTL_VERSION=1.28.2
-# ARG KUSTOMIZE_VERSION=v3.8.1
-# ARG KUBESEAL_VERSION=0.18.1
+ARG HELM_VERSION=3.2.1
+ARG KUBECTL_VERSION=1.17.5
+ARG KUSTOMIZE_VERSION=v3.8.1
+ARG KUBESEAL_VERSION=0.18.1
 
 # Install helm (latest release)
 # ENV BASE_URL="https://storage.googleapis.com/kubernetes-helm"
@@ -48,12 +48,12 @@ RUN . /envfile && echo $ARCH && \
     chmod +x /usr/bin/kubectl
 
 # Install kustomize (latest release)
-# RUN . /envfile && echo $ARCH && \
-#     curl -sLO https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2F${KUSTOMIZE_VERSION}/kustomize_${KUSTOMIZE_VERSION}_linux_${ARCH}.tar.gz && \
-#     tar xvzf kustomize_${KUSTOMIZE_VERSION}_linux_${ARCH}.tar.gz && \
-#     mv kustomize /usr/bin/kustomize && \
-#     chmod +x /usr/bin/kustomize && \
-#     rm kustomize_${KUSTOMIZE_VERSION}_linux_${ARCH}.tar.gz
+RUN . /envfile && echo $ARCH && \
+    curl -sLO https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2F${KUSTOMIZE_VERSION}/kustomize_${KUSTOMIZE_VERSION}_linux_${ARCH}.tar.gz && \
+    tar xvzf kustomize_${KUSTOMIZE_VERSION}_linux_${ARCH}.tar.gz && \
+    mv kustomize /usr/bin/kustomize && \
+    chmod +x /usr/bin/kustomize && \
+    rm kustomize_${KUSTOMIZE_VERSION}_linux_${ARCH}.tar.gz
 
 # Install eksctl (latest version)
 RUN . /envfile && echo $ARCH && \
@@ -62,35 +62,28 @@ RUN . /envfile && echo $ARCH && \
     chmod +x /usr/bin/eksctl
 
 # Install awscli
-RUN apk add --update --no-cache aws-cli
+RUN apk add --update --no-cache python3 && \
+    python3 -m ensurepip && \
+    pip3 install --upgrade pip && \
+    pip3 install awscli && \
+    pip3 cache purge
 
 # Install jq
 RUN apk add --update --no-cache jq yq
 
-# Install wget tar
-RUN apk add --update --no-cache wget tar
-
-# Install docker 
-RUN apk add --update docker openrc && \
-    rc-update add docker boot
-
 # https://docs.aws.amazon.com/eks/latest/userguide/install-aws-iam-authenticator.html
 # Install aws-iam-authenticator (latest version)
-# RUN . /envfile && echo $ARCH && \
-#     authenticator=$(curl -fs https://api.github.com/repos/kubernetes-sigs/aws-iam-authenticator/releases/latest | jq --raw-output '.name' | sed 's/^v//') && \
-#     curl -fL https://github.com/kubernetes-sigs/aws-iam-authenticator/releases/download/v${authenticator}/aws-iam-authenticator_${authenticator}_linux_${ARCH} -o /usr/bin/aws-iam-authenticator && \
-#     chmod +x /usr/bin/aws-iam-authenticator
+RUN . /envfile && echo $ARCH && \
+    authenticator=$(curl -fs https://api.github.com/repos/kubernetes-sigs/aws-iam-authenticator/releases/latest | jq --raw-output '.name' | sed 's/^v//') && \
+    curl -fL https://github.com/kubernetes-sigs/aws-iam-authenticator/releases/download/v${authenticator}/aws-iam-authenticator_${authenticator}_linux_${ARCH} -o /usr/bin/aws-iam-authenticator && \
+    chmod +x /usr/bin/aws-iam-authenticator
 
 # Install for envsubst
 RUN apk add --update --no-cache gettext
 
 # Install kubeseal
-# RUN . /envfile && echo $ARCH && \
-#     curl -L https://github.com/bitnami-labs/sealed-secrets/releases/download/v${KUBESEAL_VERSION}/kubeseal-${KUBESEAL_VERSION}-linux-${ARCH}.tar.gz -o - | tar xz -C /usr/bin/ && \
-#     chmod +x /usr/bin/kubeseal
+RUN . /envfile && echo $ARCH && \
+    curl -L https://github.com/bitnami-labs/sealed-secrets/releases/download/v${KUBESEAL_VERSION}/kubeseal-${KUBESEAL_VERSION}-linux-${ARCH}.tar.gz -o - | tar xz -C /usr/bin/ && \
+    chmod +x /usr/bin/kubeseal
 
 WORKDIR /apps
-
-# sudo docker build -t alpine:lmtdblck-build .
-# sudo docker run --rm -it alpine:lmtdblck-build
-# docker run -it --name alpine-lmtdblck -v "/var/run/docker.sock:/var/run/docker.sock:rw" alpine:lmtdblck-build
